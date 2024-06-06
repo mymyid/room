@@ -1,4 +1,4 @@
-console.log("hello cah...");
+console.log("hello cah... 👋");
 
 const localVideo = document.getElementById("localVideo");
 const peerCamera = document.getElementById("peerCamera")
