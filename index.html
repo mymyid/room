@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyMyId-Room</title>
+</head>
+<body class="bg-slate-200">
+<nav class="flex justify-center">
+  <ul class="flex">
+    <li class="mx-3 p-3 flex">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+      
+      <a href="#peer2peer" class="underline underline-offset-4">Peer to Peer</a>
+    </li>
+    <li class="mx-3 p-3 flex">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+      </svg>      
+      
+      Room
+    </li>
+  </ul>
+</nav>
+<main>
+  <div class="bg-slate-50 m-10 flex p-10 rounded-xl">
+    <section class="flex w-full flex-col mx-2">
+      <h1 class="font-bold text-xl mb-3">My Camera</h1>
+      <div class="bg-white mr-10 flex justify-center items-center p-10 rounded-xl">
+        <video id="localVideo" autoplay playsinline></video>
+      </div>
+    </section>
+    <div class="flex flex-col w-full mx-2">
+      <section class="flex w-full flex-col mx-2 mb-3">
+        <h1 class="font-bold text-xl mb-3">Peer Camera</h1>
+        <div class="bg-white mr-10 flex justify-center items-center p-10 rounded-xl">
+          <video id="peerCamera" autoplay playsinline></video>
+        </div>
+      </section>
+      <section class="mx-2">
+        <h1 class="font-bold text-xl mb-3">Online User</h1>
+        <ul>
+          <li class="flex bg-white rounded-xl p-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <p>Consequat aute ipsum eiusmod nisi velit eiusmod.</p>
+          </li>
+          <li class="flex bg-white rounded-xl p-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <p>Sint in culpa exercitation duis excepteur magna fugiat minim et anim irure.</p>
+          </li>
+          <li class="flex bg-white rounded-xl p-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-slate-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <p class="text-slate-500">Dolor pariatur quis voluptate elit incididunt excepteur quis.</p>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</main>
+<script type="module" src="assets/tailwindcss.js"></script>
+<script type="module" src="assets/main.js"></script>
+</body>
+</html>
