@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+  <title>MyMyId Room</title>
+</head>
+<body class="bg-slate-200">
+
+<nav class="flex justify-center">
+  <ul class="flex">
+    <li class="mx-3 p-3 flex">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+      </svg>
+      <a href="home.html" class="underline underline-offset-4">Home</a>
+    </li>
+    <li class="mx-3 p-3 flex">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+      </svg>
+      <a href="index.html" id="sign-out" class="">Keluar</a>
+    </li>
+  </ul>
+</nav>
+<main>
+  <div class="bg-slate-50 md:m-10 flex flex-col md:flex-row md:p-10 rounded-xl">
+    <section class="flex w-full flex-col md:mx-2 p-3">
+      <h1 class="font-bold text-xl mb-3">My Camera</h1>
+      <div class="bg-white md:mr-10 flex justify-center items-center md:p-10 rounded-xl">
+        <video id="localVideo" autoplay playsinline></video>
+      </div>
+    </section>
+    <div class="flex flex-col w-full md:mx-2 mt-3">
+      <section class="mx-2">
+        <h1 class="font-bold text-xl mb-3">My Room</h1>
+        <section class="flex flex-row mb-3 items-end justify-center">
+          <div class="flex flex-col w-full">
+            <label for="judul" class="font-bold">Judul</label>
+            <input type="text" name="judul" id="judul" class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" placeholder="Judul Meeting, contoh: pertemuan rutin mingguan">
+          </div>
+          <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 rounded ml-3 h-10">Simpan</button>
+        </section>
+        <ul>
+          <li class=" bg-white rounded-xl p-3 mb-3">
+            <a href="room.html?id=19237019237" class="flex">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              <div class="flex flex-row w-full">
+                <p class="font-bold flex w-full">Consequat aute ipsum eiusmod nisi velit eiusmod.</p>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>           
+              </div>
+            </a>
+          </li>
+          <li class=" bg-white rounded-xl p-3 mb-3">
+            <a href="room.html?id=192370192379" class="flex">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              <div class="flex flex-row w-full">
+                <p class="font-bold flex w-full">Consequat aute ipsum eiusmod nisi velit eiusmod.</p>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>           
+              </div>
+            </a>
+          </li>
+          <li class=" bg-white rounded-xl p-3 mb-3">
+            <a href="room.html?id=192370192376" class="flex">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              <div class="flex flex-row w-full">
+                <p class="font-bold flex w-full">Consequat aute ipsum eiusmod nisi velit eiusmod.</p>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>           
+              </div>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</main>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module" src="assets/js/main.js"></script>
+<script type="module" src="assets/js/pages/home.js"></script>
+</body>
+</html>
