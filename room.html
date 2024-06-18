@@ -25,65 +25,22 @@
   </ul>
 </nav>
 <main>
-  <div class="bg-slate-50 md:m-10 flex flex-col md:flex-row w-full p-3 md:p-10 rounded-xl">
-    <section class="flex w-full w-full flex-col md:mx-2">
-      <h1 class="font-bold text-xl mb-3">My Camera</h1>
-      <div class="bg-white md:mr-10 flex justify-center items-center md:p-10 rounded-xl">
-        <video id="localVideo" autoplay playsinline></video>
-      </div>
-    </section>
-    <div class="flex flex-col w-full md:mx-2">
-      <section class="flex w-full flex-col md:mx-2 md:mb-3 mt-4">
+  <div class="bg-slate-50 md:m-10 flex flex-col w-full p-3 md:p-10 rounded-xl">
+    <div class="flex flex-col md:flex-row"> 
+      <section class="flex w-full w-full flex-col md:mx-2">
+        <h1 class="font-bold text-xl mb-3">My Camera</h1>
+        <div class="bg-white md:mr-10 flex justify-center items-center md:p-10 rounded-xl">
+          <video id="localVideo" autoplay playsinline></video>
+        </div>
+      </section>
+      <section class="flex w-full w-full flex-col md:mx-2">
         <h1 class="font-bold text-xl mb-3">Peer Camera</h1>
         <div class="bg-white md:mr-10 flex justify-center items-center md:p-10 rounded-xl">
           <video id="peerCamera" autoplay playsinline></video>
         </div>
       </section>
-      <section class="mx-2">
-        <h1 class="font-bold text-xl mb-3 mt-4">Other rooms</h1>
-        <ul>
-          <li class=" bg-white rounded-xl p-3 mb-3">
-            <a href="room.html?id=19237019237" class="flex">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-              </svg>
-              <div class="flex flex-row w-full">
-                <p class="font-bold flex w-full">Consequat aute ipsum eiusmod nisi velit eiusmod.</p>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>           
-              </div>
-            </a>
-          </li>
-          <li class=" bg-white rounded-xl p-3 mb-3">
-            <a href="room.html?id=192370192379" class="flex">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-              </svg>
-              <div class="flex flex-row w-full">
-                <p class="font-bold flex w-full">Consequat aute ipsum eiusmod nisi velit eiusmod.</p>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>           
-              </div>
-            </a>
-          </li>
-          <li class=" bg-white rounded-xl p-3 mb-3">
-            <a href="room.html?id=192370192376" class="flex">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-              </svg>
-              <div class="flex flex-row w-full">
-                <p class="font-bold flex w-full">Consequat aute ipsum eiusmod nisi velit eiusmod.</p>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>           
-              </div>
-            </a>
-          </li>
-        </ul>
-      </section>
     </div>
+    <p class="text-center" id="status-connection">Connecting....</p>
   </div>
 </main>
 <script src="https://cdn.tailwindcss.com"></script>
