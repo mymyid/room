@@ -2,7 +2,7 @@ import { provider, auth } from "../firebase.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 console.log("hello cah on room... 👋");
-const URL = "http://127.0.0.1:8080";
+const URL = "https://so.my.my.id";
 const localVideo = document.getElementById("localVideo");
 const peerCamera = document.getElementById("peerCamera");
 var peerConnection
