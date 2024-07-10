@@ -5,139 +5,143 @@ console.log("hello cah on room... 👋");
 const URL = "https://so.my.my.id";
 const localVideo = document.getElementById("localVideo");
 const peerCamera = document.getElementById("peerCamera");
-var peerConnection
+var peerConnection;
+peerCamera.autoplay = true;
+peerCamera.muted = false;
+var loadingAnswer = false
+var loadingOffer = false
+var isconnected = false
 initVideoCall();
 
 async function initVideoCall() {
-  // Example usage: Get the 'id' query parameter
   const roomId = getQueryParameter("id");
   console.log("Room ID:", roomId);
+  const uid = localStorage.getItem("_userid");
+  console.log("UID:", uid);
 
-  // Get user media (camera)
   const localStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: false,
   });
+
+  console.log("localStream >> ", localStream);
   localVideo.srcObject = localStream;
 
-  // Create a new RTCPeerConnection
   peerConnection = new RTCPeerConnection({
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   });
 
-  // Add tracks from the local localStream to the peer connection
-  localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+  localStream.getTracks().forEach((track) => {
+    console.log('track >> ', track, localStream)
+    return peerConnection.addTrack(track, localStream)
+  });
 
-  // Handle ICE candidates from the peer connection
   peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
-      // fetch(`${URL}/api/room/${roomId}/join`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ type: "candidate", data: event.candidate }),
-      // });
+      // Optionally handle ICE candidates
     }
   };
 
-  // Handle incoming remote tracks
   peerConnection.ontrack = (event) => {
-    console.log(event)
     if (peerCamera.srcObject !== event.streams[0]) {
-      console.log("onTrack Stream >>", event.streams);
-      console.log("onTrack First Stream Data >> ", event.streams[0]);
+      console.log(event)
+      peerCamera.autoplay = true
       // peerCamera.srcObject = event.streams[0];
-      console.log("Received remote stream");
+      peerCamera.srcObject = event.streams[0];
+      // peerCamera.srcObject = localStream
+      console.log("Received remote stream", peerCamera, event.streams[0]);
     }
-  };
-
-  // Handle errors
-  peerConnection.onerror = (error) => {
-    console.error("PeerConnection error:", error);
   };
 
   peerConnection.onconnectionstatechange = (event) => {
     console.log("Connection state changed:", peerConnection.connectionState);
   };
 
-  // Create an SDP offer
-  const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
-  const uid = localStorage.getItem("_userid");
-  // Send the offer to the server and get the answer
-  const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "offer", data: offer }),
-  });
-
-  if (!response.ok) {
-    console.error("Failed to get answer from server:", response.statusText);
-    if (response.status == 404) {
-      alert(`Room ${response.statusText}, Silahkan buat room baru`);
-      window.location.href = "home.html";
+  let room
+  const rooms = await getRooms()
+  const dataRooms = Object.keys(rooms);
+  for (let index = 0; index < dataRooms.length; index++) {
+    const element = rooms[dataRooms[index]];
+    if (element.ID == roomId) {
+      room = element
     }
-    return;
   }
 
-  const data = await response.json();
-  console.log("data >> ", data);
-  console.log("Success Join Room, periodicaly get offer then send onswer");
-
-  var interval = setInterval(function () {
-    // Get Offer
-    
-    getOffer().then((od) => {
-      console.log("offer Data >> ", od);
-      if (od) clearInterval(interval);
-    });
-  }, 2000);
-  // const answer = new RTCSessionDescription(data.data);
-
-  // // Set the remote description with the server's answer
-  // await peerConnection.setRemoteDescription(answer);
-
-  // console.log("WebRTC connection established successfully!");
+  if (room.HostUid == uid) {
+    console.log("Hanlde Host")
+    return handleHost(roomId, uid)
+  } else {
+    console.log("Hanlde Client")
+    return handleClient(roomId, uid)
+  }
+  
 }
 
 async function getOffer() {
   let offer = false;
   const roomId = getQueryParameter("id");
-  const now = new Date();
-  console.log("Getting Offer >> ", now);
   const uid = localStorage.getItem("_userid");
-  // Send the offer to the server and get the answer
+
+  if (loadingOffer) return
+
+  loadingOffer = true
+
   const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
 
   if (!response.ok) {
-    console.error("Failed to get answer from server:", response.statusText);
+    console.error("Failed to get offer from server:", response.statusText);
     return;
   }
 
   const res = await response.json();
-  console.log("Offer >> ", res);
-  const offersData = res.room.Offers;
-  if (res.room.Offers.length > 0) {
-    // Get Offer for me
-    let offerToMe = offersData.filter((item) => item.Uid != uid);
-    console.log("Offer to me >> ", offerToMe);
-    if (offerToMe.length > 0) {
-      const answer = new RTCSessionDescription(offerToMe[0].Offer);
-      console.log("Sending Answer >> ", answer);
+  let offerData = null;
+
+  if (res.room.HostUid == uid) {
+    const clientData = res.room.ClientData.Offer;
+    if (clientData.type != "offer") {
+      console.log("No participant offer available");
+    } else {
+      console.log("Received offer from participant:", clientData);
       offer = true;
-      sendAnswer(answer);
+      offerData = clientData;
+    }
+  } else {
+    const hostData = res.room.HostData.Offer;
+    if (hostData.type != "offer") {
+      console.log("No host offer available, waiting for host to join");
+    } else {
+      console.log("Received offer from host:", hostData);
+      offer = true;
+      offerData = hostData;
     }
   }
+
+  if (offer) {
+    try {
+      console.log("Setting remote description with offer:", offerData);
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(offerData));
+      console.log("Remote description set:", peerConnection.remoteDescription);
+      const answer = await peerConnection.createAnswer();
+      console.log("Created local answer:", answer);
+      await peerConnection.setLocalDescription(answer);
+      console.log("Local description set:", peerConnection.localDescription);
+      sendAnswer(answer);
+    } catch (error) {
+      console.error("Failed to set remote description or create answer:", error);
+    }
+  }
+
+  loadingOffer = false
   return offer;
 }
 
 async function sendAnswer(answer) {
-  const now = new Date();
-  console.log("Send Answer >> ", now);
   const roomId = getQueryParameter("id");
   const uid = localStorage.getItem("_userid");
+
   const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -149,18 +153,25 @@ async function sendAnswer(answer) {
     return;
   }
 
-  var intervalAnswer = setInterval(function () {
-    let answerData = getAnswer();
-    if (answerData) clearInterval(intervalAnswer);
-  }, 2000);
+  document.getElementById("status-connection").innerHTML = "Connected";
+  isconnected = true;
+
+  // var intervalAnswer = setInterval(function () {
+  //   let answerData = getAnswer();
+  //   if (answerData) clearInterval(intervalAnswer);
+  // }, 5000);
 }
 
 async function getAnswer() {
+  let answer = false;
   const roomId = getQueryParameter("id");
-  const now = new Date();
-  console.log("Getting Offer >> ", now);
   const uid = localStorage.getItem("_userid");
-  // Send the offer to the server and get the answer
+
+  console.log("loadingAnswer >> ", loadingAnswer, "isconnected >> ", isconnected)
+  if (loadingAnswer == true && isconnected == false) return
+
+  loadingAnswer = true
+
   const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
@@ -168,26 +179,48 @@ async function getAnswer() {
 
   if (!response.ok) {
     console.error("Failed to get answer from server:", response.statusText);
-    return;
+    loadingAnswer = false
+    return answer;
   }
 
   const res = await response.json();
-  const answersData = res.room.Answer;
-  console.log("data answer >>", answersData);
-  if (res.room.Answer.length > 0) {
-    // Get Offer for me
-    const answerData = res.room.Answer;
-    let answerForMe = answerData.filter((item) => item.Uid != uid);
-    if (answerForMe.length > 0) {
-      // TODO
-      // Set rtc client
-      const remoteAnswer = answerForMe[0];
-      console.log("SUCCESS GETTING DATA, LET SET STRAEM DATA", answerForMe);
-      // Set the remote description with the server's answer
-      await peerConnection.setRemoteDescription(remoteAnswer.Answer);
-      document.getElementById('status-connection').innerHTML = "Connected"
+  let answersData;
+
+  if (res.room.HostUid == uid) {
+    const clientData = res.room.ClientData.Answer;
+    if (clientData.type == "unknown") {
+      console.log("No participant answer available");
+    } else {
+      console.log("Received answer from participant:", clientData);
+      answer = true;
+      answersData = clientData;
+    }
+  } else {
+    const hostData = res.room.HostData.Answer;
+    if (hostData.type == "unknown") {
+      console.log("No host answer available, waiting for host to join");
+    } else {
+      console.log("Received answer from host:", hostData);
+      answer = true;
+      answersData = hostData;
     }
   }
+
+  if (answer && isconnected == false) {
+    try {
+      console.log("Setting remote description with answer:", answersData);
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(answersData));
+      console.log("Remote description set:", peerConnection.remoteDescription);
+      document.getElementById("status-connection").innerHTML = "Connected";
+      isconnected = true;
+
+      console.log('isconnected >> ', isconnected)
+    } catch (error) {
+      console.error("Failed to set remote description:", error);
+    }
+  }
+  loadingAnswer = false
+  return answer;
 }
 
 document.getElementById("sign-out").addEventListener("click", function () {
@@ -200,7 +233,84 @@ document.getElementById("sign-out").addEventListener("click", function () {
     });
 });
 
+document.getElementById("peerCamera").addEventListener('click', () => {
+  console.log(peerCamera.srcObject)
+  if (peerCamera.srcObject) {
+    console.log("Play!!")
+      peerCamera.play().then(() => {
+          console.log("Playback started after user interaction.");
+      }).catch((error) => {
+          console.error("Playback error:", error);
+      });
+  }
+});
+
 function getQueryParameter(name) {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get(name);
+}
+
+async function getRooms() {
+  try {
+    const response = await fetch(`${URL}/api/rooms`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    alert(error);
+  }
+}
+
+async function handleClient(roomId, uid) {
+  // Get Offer
+  var interval = setInterval(function () {
+    getOffer().then((od) => {
+      if (od) clearInterval(interval);
+    });
+  }, 5000);
+  // Create Answer
+
+  // Send Answer
+
+  // Get Status Connection
+
+  // Update Status connection
+}
+
+async function handleHost(roomId, uid) {
+  // Send Offer
+  const offer = await peerConnection.createOffer();
+  console.log("Created local offer:", offer);
+  await peerConnection.setLocalDescription(offer);
+  console.log("Local description set:", peerConnection.localDescription);
+
+  const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "offer", data: offer }),
+  });
+
+  if (!response.ok) {
+    console.error("Failed to get answer from server:", response.statusText);
+    if (response.status == 404) {
+      alert(`Room ${response.statusText}, please create a new room`);
+      window.location.href = "home.html";
+    }
+    return;
+  }
+
+  const data = await response.json();
+  console.log("Received answer from server:", data);
+
+  console.log("Successfully joined room, periodically getting offer then sending answer");
+
+  // Get Answer
+  var intervalAnswer = setInterval(function () {
+    getAnswer().then((od) => {
+      if (od) clearInterval(intervalAnswer);
+    });
+  }, 5000);
+
+  // Set Status Connection
+
+  // Update Status Connection
 }
