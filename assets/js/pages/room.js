@@ -5,7 +5,7 @@ console.log("hello cah on room... 👋");
 const URL = "http://127.0.0.1:8080";
 const localVideo = document.getElementById("localVideo");
 const peerCamera = document.getElementById("peerCamera");
-var peerConnection
+var peerConnection;
 initVideoCall();
 
 async function initVideoCall() {
@@ -18,6 +18,7 @@ async function initVideoCall() {
     video: true,
     audio: false,
   });
+  console.log("localStream >> ", localStream)
   localVideo.srcObject = localStream;
 
   // Create a new RTCPeerConnection
@@ -26,7 +27,9 @@ async function initVideoCall() {
   });
 
   // Add tracks from the local localStream to the peer connection
-  localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+  localStream
+    .getTracks()
+    .forEach((track) => peerConnection.addTrack(track, localStream));
 
   // Handle ICE candidates from the peer connection
   peerConnection.onicecandidate = (event) => {
@@ -41,11 +44,12 @@ async function initVideoCall() {
 
   // Handle incoming remote tracks
   peerConnection.ontrack = (event) => {
-    console.log(event)
+    console.log(event);
     if (peerCamera.srcObject !== event.streams[0]) {
       console.log("onTrack Stream >>", event.streams);
       console.log("onTrack First Stream Data >> ", event.streams[0]);
-      // peerCamera.srcObject = event.streams[0];
+      console.log(peerCamera)
+      peerCamera.srcObject = event.streams[0];
       console.log("Received remote stream");
     }
   };
@@ -64,6 +68,7 @@ async function initVideoCall() {
   await peerConnection.setLocalDescription(offer);
   const uid = localStorage.getItem("_userid");
   // Send the offer to the server and get the answer
+  console.log("offer >> ", { type: "offer", data: offer })
   const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -85,7 +90,7 @@ async function initVideoCall() {
 
   var interval = setInterval(function () {
     // Get Offer
-    
+
     getOffer().then((od) => {
       console.log("offer Data >> ", od);
       if (od) clearInterval(interval);
@@ -117,27 +122,65 @@ async function getOffer() {
   }
 
   const res = await response.json();
-  console.log("Offer >> ", res);
-  const offersData = res.room.Offers;
-  if (res.room.Offers.length > 0) {
-    // Get Offer for me
-    let offerToMe = offersData.filter((item) => item.Uid != uid);
-    console.log("Offer to me >> ", offerToMe);
-    if (offerToMe.length > 0) {
-      const answer = new RTCSessionDescription(offerToMe[0].Offer);
-      console.log("Sending Answer >> ", answer);
+  console.log("Offer >> ", res, uid);
+  let offerData = null;
+  if (res.room.HostUid == uid) {
+    const clientData = res.room.ClientData.Offer;
+    if (clientData.type != "offer") {
+      console.log("No participant");
+    } else {
+      console.log("Send Answer to participant", clientData);
       offer = true;
-      sendAnswer(answer);
+      offerData = clientData;
     }
+    console.log("Offer Data Client >> ", offerData)
+  } else {
+    const hostData = res.room.HostData.Offer;
+    if (hostData.type != "offer") {
+      console.log("No Host, please wait host to join");
+    } else {
+      console.log("Send Answer to host");
+      offer = true;
+      offerData = hostData;
+    }
+    console.log("Offer Data Host >> ", offerData)
   }
+
+  if (offer) {
+    // const answer = new RTCSessionDescription(offerData);
+    console.log('offerData >> ', offerData)
+    const answer = await peerConnection.createAnswer()
+            .then((answer) => {
+              return peerConnection.setLocalDescription(answer);
+            })
+            .catch((err) => {
+              console.log("ERROR >> ",err)
+            });
+    console.log("Sending Answer >> ", answer);
+    offer = true;
+    sendAnswer(answer);
+  }
+  // const offersData = res.room.Offers;
+  // if (res.room.Offers.length > 0) {
+  //   // Get Offer for me
+  //   let offerToMe = offersData.filter((item) => item.Uid != uid);
+  //   console.log("Offer to me >> ", offerToMe);
+  //   if (offerToMe.length > 0) {
+  //     const answer = new RTCSessionDescription(offerToMe[0].Offer);
+  //     console.log("Sending Answer >> ", answer);
+  //     offer = true;
+  //     sendAnswer(answer);
+  //   }
+  // }
   return offer;
 }
 
 async function sendAnswer(answer) {
   const now = new Date();
-  console.log("Send Answer >> ", now);
+  console.log("Send Answer >> ", now, answer);
   const roomId = getQueryParameter("id");
   const uid = localStorage.getItem("_userid");
+  console.log("answer >> ", { type: "answer", data: answer })
   const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -156,6 +199,7 @@ async function sendAnswer(answer) {
 }
 
 async function getAnswer() {
+  let answer = false
   const roomId = getQueryParameter("id");
   const now = new Date();
   console.log("Getting Offer >> ", now);
@@ -168,26 +212,43 @@ async function getAnswer() {
 
   if (!response.ok) {
     console.error("Failed to get answer from server:", response.statusText);
-    return;
+    return answer;
   }
 
   const res = await response.json();
-  const answersData = res.room.Answer;
-  console.log("data answer >>", answersData);
-  if (res.room.Answer.length > 0) {
-    // Get Offer for me
-    const answerData = res.room.Answer;
-    let answerForMe = answerData.filter((item) => item.Uid != uid);
-    if (answerForMe.length > 0) {
-      // TODO
-      // Set rtc client
-      const remoteAnswer = answerForMe[0];
-      console.log("SUCCESS GETTING DATA, LET SET STRAEM DATA", answerForMe);
-      // Set the remote description with the server's answer
-      await peerConnection.setRemoteDescription(remoteAnswer.Answer);
-      document.getElementById('status-connection').innerHTML = "Connected"
+  let answersData;
+  console.log("data answer >>", res, res.room.Answer);
+  if (res.room.HostUid == uid) {
+    const clientData = res.room.ClientData.Answer;
+    if (clientData.type == "unknown") {
+      console.log("No participant");
+    } else {
+      console.log("Receive Answer from participant", clientData);
+      answer = true
+      answersData = clientData;
     }
+    console.log("Offer Data Client >> ", answersData)
+  } else {
+    const hostData = res.room.HostData.Answer;
+    if (hostData.type == "unknown") {
+      console.log("No Host, please wait host to join");
+    } else {
+      console.log("Receive Answer from host");
+      answer = true
+      answersData = hostData;
+    }
+    console.log("Answer Data Host >> ", answersData)
   }
+  if (answer) {
+    // TODO
+    // Set rtc client
+    console.log("SUCCESS GETTING DATA, LET SET STRAEM DATA", answersData);
+    // Set the remote description with the server's answer
+    await peerConnection.setRemoteDescription(answersData);
+    await peerConnection.createAnswer(answersData)
+    document.getElementById("status-connection").innerHTML = "Connected";
+  }
+  return answer
 }
 
 document.getElementById("sign-out").addEventListener("click", function () {

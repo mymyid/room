@@ -70,7 +70,8 @@ async function createRom() {
   }
 
   try {
-    const payload = { judul: judul.value }; // Payload containing the title
+    const uid = localStorage.getItem("_userid")
+    const payload = { judul: judul.value, uid: uid }; // Payload containing the title
     
     const response = await fetch(`${URL}/api/create-room`, {
       method: "POST",
