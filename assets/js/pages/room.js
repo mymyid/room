@@ -38,7 +38,8 @@ async function initVideoCall() {
 
   peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
-      // Optionally handle ICE candidates
+      // TODO : send candidate ke api, dan get di lawan, lalu laukan addIceCandidate di peerconnection
+      // ini digunakan tunuk memastikan routing video stream berjalan, sehingga antar peer tau sumber komunikasinya
     }
   };
 
