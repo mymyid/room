@@ -2,24 +2,101 @@ import { provider, auth } from "../firebase.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 console.log("hello cah on room... 👋");
-const URL = "http://127.0.0.1:5199";
+const URL = "https://so.my.my.id";
 const localVideo = document.getElementById("localVideo");
 const peerCamera = document.getElementById("peerCamera");
-var localIceCandidate = ""
-var remoteIceCandidate = ""
-var peerConnection;
+var localIceCandidate = []
+var remoteIceCandidate = []
+
 peerCamera.autoplay = true;
 peerCamera.muted = false;
 var loadingAnswer = false;
 var loadingOffer = false;
 var isconnected = false;
+
+const roomId = getQueryParameter("id");
+const uid = localStorage.getItem("_userid");
+
+document.getElementById("sign-out").addEventListener("click", function () {
+  signOut(auth)
+    .then(() => {
+      window.location.href = "index.html";
+    })
+    .catch((error) => {
+      alert(error);
+    });
+});
+
+// document.getElementById("peerCamera").addEventListener("click", () => {
+//   console.log(peerCamera.srcObject);
+//   if (peerCamera.srcObject) {
+//     console.log("Play!!");
+//     peerCamera
+//       .play()
+//       .then(() => {
+//         console.log("Playback started after user interaction.");
+//       })
+//       .catch((error) => {
+//         console.error("Playback error:", error);
+//       });
+//   }
+// });
+
+const peerConnection = new RTCPeerConnection({
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+});
+
+peerConnection.onicecandidate = (event) => {
+  // Handle multiple icecandidte
+  console.log("ICECandidate", event, event.candidate)
+  if (event.candidate) {
+    localIceCandidate.push(event.candidate)
+    document.getElementById("localIceCandidate").innerHTML = "localIceCandidate >> " + JSON.stringify(event.candidate);
+    console.log("Get Local IceCandidate", localIceCandidate)
+
+    fetch(`${URL}/api/room/${roomId}/candidate/${uid}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "candidate", data: event.candidate }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+        }
+        return res.json();
+      })
+      .then((res) => {
+        console.log("success send candidate >> ", res)
+        var interval = setInterval(function () {
+          getIceCandidate().then((od) => {
+            if (od) clearInterval(interval);
+          });
+        }, 5000);
+      })
+      .catch((err) => {
+        alert(err);
+      });
+  }
+};
+
+peerConnection.ontrack = (event) => {
+  if (peerCamera.srcObject !== event.streams[0]) {
+    console.log(event);
+    peerCamera.autoplay = true;
+    // peerCamera.srcObject = event.streams[0];
+    peerCamera.srcObject = event.streams[0];
+    document.getElementById("remoteStream").innerHTML = "remoteStream >> " + event.streams[0].id;
+    // peerCamera.srcObject = localStream
+    console.log("Received remote stream", peerCamera, event.streams[0]);
+  }
+};
+
+peerConnection.onconnectionstatechange = (event) => {
+  console.log("Connection state changed:", peerConnection.connectionState);
+};
+
 initVideoCall();
 
 async function initVideoCall() {
-  const roomId = getQueryParameter("id");
-  console.log("Room ID:", roomId);
-  const uid = localStorage.getItem("_userid");
-  console.log("UID:", uid);
 
   const localStream = await navigator.mediaDevices.getUserMedia({
     video: true,
@@ -30,89 +107,13 @@ async function initVideoCall() {
   localVideo.srcObject = localStream;
   document.getElementById("localStream").innerHTML = "localStream >> " + localStream.id;
 
-  peerConnection = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-  });
-
   localStream.getTracks().forEach((track) => {
-    console.log("track >> ", track, localStream);
     return peerConnection.addTrack(track, localStream);
   });
-
-  peerConnection.onicecandidate = (event) => {
-    // Handle multiple icecandidte
-    console.log("ICECandidate", event, event.candidate)
-    if (event.candidate) {
-      localIceCandidate = event.candidate
-      document.getElementById("localIceCandidate").innerHTML = "localIceCandidate >> " + JSON.stringify(event.candidate);
-      console.log("Get Local IceCandidate", localIceCandidate)
-      // TODO : send candidate ke api, dan get di lawan, lalu laukan addIceCandidate di peerconnection
-      // ini digunakan tunuk memastikan routing video stream berjalan, sehingga antar peer tau sumber komunikasinya
-      /**
-       * Example :
-       * // Handle ICE candidates
-          localPeerConnection.onicecandidate = (event) => {
-              console.log('localPeerConnection.onicecandidate', event)
-              if (event.candidate) {
-                  remotePeerConnection.addIceCandidate(event.candidate);
-              }
-          };
-
-          remotePeerConnection.onicecandidate = (event) => {
-              console.log('remotePeerConnection.onicecandidate', event)
-              if (event.candidate) {
-                  localPeerConnection.addIceCandidate(event.candidate);
-              }
-          };
-       */
-
-      const roomId = getQueryParameter("id");
-      const uid = localStorage.getItem("_userid");
-
-      fetch(`${URL}/api/room/${roomId}/candidate/${uid}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "candidate", data: event.candidate }),
-      })
-        .then((res) => {
-          if (!res.ok) {
-          }
-          return res.json();
-        })
-        .then((res) => {
-          console.log("success send candidate >> ", res)
-          var interval = setInterval(function () {
-            getIceCandidate().then((od) => {
-              if (od) clearInterval(interval);
-            });
-          }, 5000);
-        })
-        .catch((err) => {
-          alert(err);
-        });
-    }
-  };
-
-  peerConnection.ontrack = (event) => {
-    if (peerCamera.srcObject !== event.streams[0]) {
-      console.log(event);
-      peerCamera.autoplay = true;
-      // peerCamera.srcObject = event.streams[0];
-      peerCamera.srcObject = event.streams[0];
-      document.getElementById("remoteStream").innerHTML = "remoteStream >> " + event.streams[0].id;
-      // peerCamera.srcObject = localStream
-      console.log("Received remote stream", peerCamera, event.streams[0]);
-    }
-  };
-
-  peerConnection.onconnectionstatechange = (event) => {
-    console.log("Connection state changed:", peerConnection.connectionState);
-  };
 
   let room;
   const rooms = await getRooms();
   const dataRooms = Object.keys(rooms);
-  console.log(dataRooms, dataRooms.length);
   if (dataRooms.length == 0) {
     alert(`Room tidak tersedia`);
     window.location.href = "home.html";
@@ -136,8 +137,6 @@ async function initVideoCall() {
 
 async function getOffer() {
   let offer = false;
-  const roomId = getQueryParameter("id");
-  const uid = localStorage.getItem("_userid");
 
   if (loadingOffer) return;
 
@@ -202,8 +201,6 @@ async function getOffer() {
 
 async function getIceCandidate() {
   let candidate = false;
-  const roomId = getQueryParameter("id");
-  const uid = localStorage.getItem("_userid");
 
   const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
     method: "GET",
@@ -242,8 +239,8 @@ async function getIceCandidate() {
     try {
       console.log("Setting remote description with candidate:", candidateData);
       peerConnection.addIceCandidate(candidateData);
-      document.getElementById("remoteIceCandidate").innerHTML = "remoteIceCandidate >> " + JSON.stringify(candidateData);
-      remoteIceCandidate = candidateData
+      remoteIceCandidate.push(candidateData)
+      document.getElementById("remoteIceCandidate").innerHTML = "remoteIceCandidate >> " + JSON.stringify(remoteIceCandidate);
     } catch (error) {
       console.error(
         "Failed to set remote description for candidate:",
@@ -256,8 +253,6 @@ async function getIceCandidate() {
 }
 
 async function sendAnswer(answer) {
-  const roomId = getQueryParameter("id");
-  const uid = localStorage.getItem("_userid");
 
   const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
     method: "POST",
@@ -281,15 +276,7 @@ async function sendAnswer(answer) {
 
 async function getAnswer() {
   let answer = false;
-  const roomId = getQueryParameter("id");
-  const uid = localStorage.getItem("_userid");
 
-  console.log(
-    "loadingAnswer >> ",
-    loadingAnswer,
-    "isconnected >> ",
-    isconnected
-  );
   if (loadingAnswer == true && isconnected == false) return;
 
   loadingAnswer = true;
@@ -347,31 +334,6 @@ async function getAnswer() {
   return answer;
 }
 
-document.getElementById("sign-out").addEventListener("click", function () {
-  signOut(auth)
-    .then(() => {
-      window.location.href = "index.html";
-    })
-    .catch((error) => {
-      alert(error);
-    });
-});
-
-document.getElementById("peerCamera").addEventListener("click", () => {
-  console.log(peerCamera.srcObject);
-  if (peerCamera.srcObject) {
-    console.log("Play!!");
-    peerCamera
-      .play()
-      .then(() => {
-        console.log("Playback started after user interaction.");
-      })
-      .catch((error) => {
-        console.error("Playback error:", error);
-      });
-  }
-});
-
 function getQueryParameter(name) {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get(name);
@@ -405,15 +367,17 @@ async function handleClient(roomId, uid) {
 
 async function handleHost(roomId, uid) {
   // Send Offer
+  console.log("Create offer:");
   const offer = await peerConnection.createOffer();
-  console.log("Created local offer:", offer);
+  console.log("Offer reated:", offer);
+  console.log("peerConnection.setLocalDescription:", offer);
   await peerConnection.setLocalDescription(offer);
   console.log("Local description set:", peerConnection.localDescription);
 
   const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "offer", data: offer }),
+    body: JSON.stringify({ type: "offer", data: peerConnection.localDescription }),
   });
 
   if (!response.ok) {
@@ -426,7 +390,7 @@ async function handleHost(roomId, uid) {
   }
 
   const data = await response.json();
-  console.log("Received answer from server:", data);
+  console.log("Success send offer to server:", data);
 
   console.log(
     "Successfully joined room, periodically getting offer then sending answer"
