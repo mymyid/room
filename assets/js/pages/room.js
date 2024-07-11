@@ -155,6 +155,7 @@ async function getOffer() {
   const res = await response.json();
   let offerData = null;
 
+  console.log('getOffer',res.room.HostUid, uid, res.room.HostUid == uid)
   if (res.room.HostUid == uid) {
     const clientData = res.room.ClientData.Offer;
     if (clientData.type != "offer") {
@@ -215,6 +216,7 @@ async function getIceCandidate() {
   const res = await response.json();
   let candidateData = null;
 
+  console.log('getIceCandidate',res.room.HostUid, uid, res.room.HostUid == uid)
   if (res.room.HostUid == uid) {
     const clientData = res.room.ClientData.Candidate;
     if (clientData.candidate == "") {
