@@ -33,6 +33,43 @@ document.getElementById("sign-out").addEventListener("click", function () {
     });
 });
 
+document
+  .getElementById("end-button")
+  .addEventListener("click", async function () {
+    const tracks = localVideo.srcObject.getTracks();
+    tracks.forEach((track) => {
+      track.stop();
+    });
+
+    if (remoteStream) {
+      remoteStream.getTracks().forEach((track) => track.stop());
+    }
+
+    if (peerConnection) {
+      peerConnection.close();
+    }
+
+    localVideo.srcObject = null;
+    remoteVideo.srcObject = null;
+
+    const response = await fetch(`${URL}/api/rooms/${roomId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      console.error("Failed to get answer from server:", response.statusText);
+      if (response.status == 404) {
+        alert(`Room ${response.statusText}, please create a new room`);
+        window.location.href = "home.html";
+      }
+      return;
+    }
+
+    const data = await response.json();
+    console.log("Success send offer to server:", data);
+    window.location.href = "home.html";
+  });
+
 async function init() {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: true,
@@ -318,7 +355,8 @@ function registerPeerConnectionListeners() {
 
   peerConnection.addEventListener("connectionstatechange", () => {
     console.log(`Connection state change: ${peerConnection.connectionState}`);
-    document.getElementById("status-connection").innerHTML = peerConnection.signalingState
+    document.getElementById("status-connection").innerHTML =
+      peerConnection.signalingState;
   });
 
   peerConnection.addEventListener("signalingstatechange", () => {
