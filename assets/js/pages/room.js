@@ -318,6 +318,7 @@ function registerPeerConnectionListeners() {
 
   peerConnection.addEventListener("connectionstatechange", () => {
     console.log(`Connection state change: ${peerConnection.connectionState}`);
+    document.getElementById("status-connection").innerHTML = peerConnection.signalingState
   });
 
   peerConnection.addEventListener("signalingstatechange", () => {
