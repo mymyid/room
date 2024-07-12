@@ -2,17 +2,23 @@ import { provider, auth } from "../firebase.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 console.log("hello cah on room... 👋");
-const URL = "http://127.0.0.1:8080";
-const localVideo = document.getElementById("localVideo");
-const peerCamera = document.getElementById("peerCamera");
-var localIceCandidate = []
-var remoteIceCandidate = []
 
-peerCamera.autoplay = true;
-peerCamera.muted = false;
-var loadingAnswer = false;
-var loadingOffer = false;
-var isconnected = false;
+const URL = "https://so.my.my.id";
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+let localStream = null;
+let remoteStream = null;
+
+let peerConnection = null;
+
+const configuration = {
+  iceServers: [
+    {
+      urls: ["stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"],
+    },
+  ],
+  iceCandidatePoolSize: 10,
+};
 
 const roomId = getQueryParameter("id");
 const uid = localStorage.getItem("_userid");
@@ -27,89 +33,17 @@ document.getElementById("sign-out").addEventListener("click", function () {
     });
 });
 
-// document.getElementById("peerCamera").addEventListener("click", () => {
-//   console.log(peerCamera.srcObject);
-//   if (peerCamera.srcObject) {
-//     console.log("Play!!");
-//     peerCamera
-//       .play()
-//       .then(() => {
-//         console.log("Playback started after user interaction.");
-//       })
-//       .catch((error) => {
-//         console.error("Playback error:", error);
-//       });
-//   }
-// });
-
-const peerConnection = new RTCPeerConnection({
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-});
-
-peerConnection.onicecandidate = (event) => {
-  // Handle multiple icecandidte
-  console.log("ICECandidate", event, event.candidate)
-  if (event.candidate) {
-    localIceCandidate.push(event.candidate)
-    document.getElementById("localIceCandidate").innerHTML = "localIceCandidate >> " + JSON.stringify(event.candidate);
-    console.log("Get Local IceCandidate", localIceCandidate)
-
-    fetch(`${URL}/api/room/${roomId}/candidate/${uid}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "candidate", data: event.candidate }),
-    })
-      .then((res) => {
-        if (!res.ok) {
-        }
-        return res.json();
-      })
-      .then((res) => {
-        console.log("success send candidate >> ", res)
-        var interval = setInterval(function () {
-          getIceCandidate().then((od) => {
-            if (od) clearInterval(interval);
-          });
-        }, 5000);
-      })
-      .catch((err) => {
-        alert(err);
-      });
-  }
-};
-
-peerConnection.ontrack = (event) => {
-  if (peerCamera.srcObject !== event.streams[0]) {
-    console.log(event);
-    peerCamera.autoplay = true;
-    // peerCamera.srcObject = event.streams[0];
-    peerCamera.srcObject = event.streams[0];
-    document.getElementById("remoteStream").innerHTML = "remoteStream >> " + event.streams[0].id;
-    // peerCamera.srcObject = localStream
-    console.log("Received remote stream", peerCamera, event.streams[0]);
-  }
-};
-
-peerConnection.onconnectionstatechange = (event) => {
-  console.log("Connection state changed:", peerConnection.connectionState);
-};
-
-initVideoCall();
-
-async function initVideoCall() {
-
-  const localStream = await navigator.mediaDevices.getUserMedia({
+async function init() {
+  const stream = await navigator.mediaDevices.getUserMedia({
     video: true,
-    audio: false,
+    audio: true,
   });
-
-  console.log("localStream >> ", localStream);
+  localStream = stream;
   localVideo.srcObject = localStream;
-  document.getElementById("localStream").innerHTML = "localStream >> " + localStream.id;
+  remoteStream = new MediaStream();
+  remoteVideo.srcObject = remoteStream;
 
-  localStream.getTracks().forEach((track) => {
-    return peerConnection.addTrack(track, localStream);
-  });
+  console.log("Stream:", localVideo.srcObject);
 
   let room;
   const rooms = await getRooms();
@@ -128,258 +62,62 @@ async function initVideoCall() {
 
   if (room.HostUid == uid) {
     console.log("Hanlde Host");
-    return handleHost(roomId, uid);
+    return handleHost();
   } else {
     console.log("Hanlde Client");
-    return handleClient(roomId, uid);
+    return handleClient();
   }
 }
 
-async function getOffer() {
-  let offer = false;
+async function handleHost() {
+  console.log("Create PeerConnection with configuration: ", configuration);
+  peerConnection = new RTCPeerConnection(configuration);
 
-  if (loadingOffer) return;
+  registerPeerConnectionListeners();
 
-  loadingOffer = true;
-
-  const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
+  localStream.getTracks().forEach((track) => {
+    peerConnection.addTrack(track, localStream);
   });
 
-  if (!response.ok) {
-    console.error("Failed to get offer from server:", response.statusText);
-    return;
-  }
-
-  const res = await response.json();
-  let offerData = null;
-
-  console.log('getOffer',res.room.HostUid, uid, res.room.HostUid == uid)
-  if (res.room.HostUid == uid) {
-    const clientData = res.room.ClientData.Offer;
-    if (clientData.type != "offer") {
-      console.log("No participant offer available");
-    } else {
-      console.log("Received offer from participant:", clientData);
-      offer = true;
-      offerData = clientData;
+  peerConnection.onicecandidate = async (event) => {
+    if (!event.candidate) {
+      console.log("Got final candidate!");
+      return;
     }
-  } else {
-    const hostData = res.room.HostData.Offer;
-    if (hostData.type != "offer") {
-      console.log("No host offer available, waiting for host to join");
-    } else {
-      console.log("Received offer from host:", hostData);
-      offer = true;
-      offerData = hostData;
-    }
-  }
-
-  if (offer) {
-    try {
-      console.log("Setting remote description with offer:", offerData);
-      await peerConnection.setRemoteDescription(
-        new RTCSessionDescription(offerData)
-      );
-      console.log("Remote description set:", peerConnection.remoteDescription);
-      const answer = await peerConnection.createAnswer();
-      console.log("Created local answer:", answer);
-      await peerConnection.setLocalDescription(answer);
-      console.log("Local description set:", peerConnection.localDescription);
-      sendAnswer(answer);
-    } catch (error) {
-      console.error(
-        "Failed to set remote description or create answer:",
-        error
-      );
-    }
-  }
-
-  loadingOffer = false;
-  return offer;
-}
-
-async function getIceCandidate() {
-  let candidate = false;
-
-  const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    console.error("Failed to get offer from server:", response.statusText);
-    return;
-  }
-
-  const res = await response.json();
-  let candidateData = null;
-
-  console.log('getIceCandidate',res.room.HostUid, uid, res.room.HostUid == uid)
-  if (res.room.HostUid == uid) {
-    const clientData = res.room.ClientData.Candidate;
-    if (clientData.candidate == "") {
-      console.log("No participant offer available");
-    } else {
-      console.log("Received offer from participant:", clientData);
-      candidate = true;
-      candidateData = clientData;
-    }
-  } else {
-    const hostData = res.room.HostData.Candidate;
-    if (hostData.candidate == "") {
-      console.log("No host offer available, waiting for host to join");
-    } else {
-      console.log("Received offer from host:", hostData);
-      candidate = true;
-      candidateData = hostData;
-    }
-  }
-
-  if (candidate) {
-    try {
-      console.log("Setting remote description with candidate:", candidateData);
-      peerConnection.addIceCandidate(candidateData);
-      remoteIceCandidate.push(candidateData)
-      document.getElementById("remoteIceCandidate").innerHTML = "remoteIceCandidate >> " + JSON.stringify(remoteIceCandidate);
-    } catch (error) {
-      console.error(
-        "Failed to set remote description for candidate:",
-        error
-      );
-    }
-  }
-
-  return candidate;
-}
-
-async function sendAnswer(answer) {
-
-  const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "answer", data: answer }),
-  });
-
-  if (!response.ok) {
-    console.error("Failed to send answer to server:", response.statusText);
-    return;
-  }
-
-  document.getElementById("status-connection").innerHTML = "Connected";
-  isconnected = true;
-
-  // var intervalAnswer = setInterval(function () {
-  //   let answerData = getAnswer();
-  //   if (answerData) clearInterval(intervalAnswer);
-  // }, 5000);
-}
-
-async function getAnswer() {
-  let answer = false;
-
-  if (loadingAnswer == true && isconnected == false) return;
-
-  loadingAnswer = true;
-
-  const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    console.error("Failed to get answer from server:", response.statusText);
-    loadingAnswer = false;
-    return answer;
-  }
-
-  const res = await response.json();
-  let answersData;
-
-  if (res.room.HostUid == uid) {
-    const clientData = res.room.ClientData.Answer;
-    if (clientData.type == "unknown") {
-      console.log("No participant answer available");
-    } else {
-      console.log("Received answer from participant:", clientData);
-      answer = true;
-      answersData = clientData;
-    }
-  } else {
-    const hostData = res.room.HostData.Answer;
-    if (hostData.type == "unknown") {
-      console.log("No host answer available, waiting for host to join");
-    } else {
-      console.log("Received answer from host:", hostData);
-      answer = true;
-      answersData = hostData;
-    }
-  }
-
-  if (answer && isconnected == false) {
-    try {
-      console.log("Setting remote description with answer:", answersData);
-      await peerConnection.setRemoteDescription(
-        new RTCSessionDescription(answersData)
-      );
-      console.log("Remote description set:", peerConnection.remoteDescription);
-      document.getElementById("status-connection").innerHTML = "Connected";
-      isconnected = true;
-
-      console.log("isconnected >> ", isconnected);
-    } catch (error) {
-      console.error("Failed to set remote description:", error);
-    }
-  }
-  loadingAnswer = false;
-  return answer;
-}
-
-function getQueryParameter(name) {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get(name);
-}
-
-async function getRooms() {
-  try {
-    const response = await fetch(`${URL}/api/rooms`);
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    alert(error);
-  }
-}
-
-async function handleClient(roomId, uid) {
-  // Get Offer
-  var interval = setInterval(function () {
-    getOffer().then((od) => {
-      if (od) clearInterval(interval);
+    console.log("Got candidate: ", event.candidate);
+    const response = await fetch(`${URL}/api/room/${roomId}/candidate/${uid}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "candidate",
+        data: event.candidate,
+      }),
     });
-  }, 5000);
-  // Create Answer
 
-  // Send Answer
+    if (!response.ok) {
+      console.error("Failed to get answer from server:", response.statusText);
+      if (response.status == 404) {
+        alert(`Room ${response.statusText}, please create a new room`);
+        window.location.href = "home.html";
+      }
+      return;
+    }
 
-  // Get Status Connection
+    const data = await response.json();
+    console.log("Success send offer to server:", data);
+  };
 
-  // Update Status connection
-}
-
-async function handleHost(roomId, uid) {
-  // Send Offer
-  console.log("Create offer:");
   const offer = await peerConnection.createOffer();
-  console.log("Offer reated:", offer);
-  console.log("peerConnection.setLocalDescription:", offer);
   await peerConnection.setLocalDescription(offer);
-  console.log("Local description set:", peerConnection.localDescription);
+  console.log("Created offer:", offer);
 
   const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "offer", data: peerConnection.localDescription }),
+    body: JSON.stringify({
+      type: "offer",
+      data: offer,
+    }),
   });
 
   if (!response.ok) {
@@ -398,6 +136,14 @@ async function handleHost(roomId, uid) {
     "Successfully joined room, periodically getting offer then sending answer"
   );
 
+  peerConnection.ontrack = (event) => {
+    console.log("Got remote track:", event.streams[0]);
+    event.streams[0].getTracks().forEach((track) => {
+      console.log("Add a track to the remoteStream:", track);
+      remoteStream.addTrack(track);
+    });
+  };
+
   // Get Answer
   var intervalAnswer = setInterval(function () {
     getAnswer().then((od) => {
@@ -405,7 +151,184 @@ async function handleHost(roomId, uid) {
     });
   }, 5000);
 
-  // Set Status Connection
-
-  // Update Status Connection
+  //   // Get IceCandidate
+  //   var intervalAnswer = setInterval(function () {
+  //     getAnswer().then((od) => {
+  //       if (od) clearInterval(intervalAnswer);
+  //     });
+  //   }, 5000);
 }
+
+async function handleClient() {
+  peerConnection = new RTCPeerConnection(configuration);
+  registerPeerConnectionListeners();
+  localStream.getTracks().forEach((track) => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  peerConnection.onicecandidate = async (event) => {
+    if (!event.candidate) {
+      console.log("Got final candidate!");
+      return;
+    }
+    console.log("Got candidate: ", event.candidate);
+    const response = await fetch(`${URL}/api/room/${roomId}/candidate/${uid}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "candidate",
+        data: event.candidate,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to get answer from server:", response.statusText);
+      if (response.status == 404) {
+        alert(`Room ${response.statusText}, please create a new room`);
+        window.location.href = "home.html";
+      }
+      return;
+    }
+
+    const data = await response.json();
+    console.log("Success send candidate to server:", data);
+  };
+
+  peerConnection.ontrack = (event) => {
+    console.log("Got remote track:", event.streams[0]);
+    event.streams[0].getTracks().forEach((track) => {
+      console.log("Add a track to the remoteStream:", track);
+      remoteStream.addTrack(track);
+    });
+  };
+
+  var interval = setInterval(function () {
+    getOffer().then((od) => {
+      if (od) clearInterval(interval);
+    });
+  }, 5000);
+}
+
+async function getOffer() {
+  let offer = false;
+
+  const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    console.error("Failed to get offer from server:", response.statusText);
+    return;
+  }
+
+  const res = await response.json();
+  console.log("Get Offer", res);
+  if (res.room.Offer.type != "unknown") {
+    await peerConnection.setRemoteDescription(
+      new RTCSessionDescription(res.room.Offer)
+    );
+    const answer = await peerConnection.createAnswer();
+    console.log("Created answer:", answer);
+    await peerConnection.setLocalDescription(answer);
+    sendAnswer(answer);
+    offer = true;
+    getIceCandidate();
+  }
+  return offer;
+}
+
+async function sendAnswer(answer) {
+  const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "answer", data: answer }),
+  });
+
+  if (!response.ok) {
+    console.error("Failed to send answer to server:", response.statusText);
+    return;
+  }
+
+  const res = await response.json();
+  console.log("Res Answer", res);
+}
+
+async function getRooms() {
+  try {
+    const response = await fetch(`${URL}/api/rooms`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    alert(error);
+  }
+}
+
+async function getAnswer() {
+  let answer = false;
+
+  const response = await fetch(`${URL}/api/room/${roomId}/data/${uid}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    console.error("Failed to get answer from server:", response.statusText);
+    return answer;
+  }
+
+  const res = await response.json();
+  console.log("Get Answer", res);
+
+  if (res.room.Answer.type != "unknown") {
+    const rtcSessionDescription = new RTCSessionDescription(res.room.Answer);
+    await peerConnection.setRemoteDescription(rtcSessionDescription);
+    answer = true;
+    getIceCandidate();
+  }
+  return answer;
+}
+
+async function getIceCandidate() {
+  try {
+    const response = await fetch(`${URL}/api/room/${roomId}/candidate/${uid}`);
+    const data = await response.json();
+    console.log(data.room.HostIceCandidate);
+    if (data.room.ClientIceCandidate) {
+      data.room.ClientIceCandidate.forEach(async (data) => {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(data));
+      });
+    }
+  } catch (error) {
+    alert(error);
+  }
+}
+
+function getQueryParameter(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+function registerPeerConnectionListeners() {
+  peerConnection.addEventListener("icegatheringstatechange", () => {
+    console.log(
+      `ICE gathering state changed: ${peerConnection.iceGatheringState}`
+    );
+  });
+
+  peerConnection.addEventListener("connectionstatechange", () => {
+    console.log(`Connection state change: ${peerConnection.connectionState}`);
+  });
+
+  peerConnection.addEventListener("signalingstatechange", () => {
+    console.log(`Signaling state change: ${peerConnection.signalingState}`);
+  });
+
+  peerConnection.addEventListener("iceconnectionstatechange ", () => {
+    console.log(
+      `ICE connection state change: ${peerConnection.iceConnectionState}`
+    );
+  });
+}
+
+init();
