@@ -3,7 +3,7 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 
 const emptySpace = document.getElementById("empty-info");
 const roomList = document.getElementById("room-list");
-const URL = "https://so.my.my.id";
+const URL = "http://127.0.0.1:8080";
 var isloading = false
 document.getElementById("sign-out").addEventListener("click", function () {
   signOut(auth)
@@ -37,13 +37,21 @@ async function generateList(rooms) {
       const li = document.createElement("li");
       li.className = "bg-white rounded-xl p-3 mb-3";
       const uid = localStorage.getItem("_userid")
+      let span = ``
+      if (element.HostUid == uid) {
+        span = `<span class="md:ml-3 font-bold text-2xs bg-green-500 rounded-full px-2 text-white">me<span>`
+      }
       li.innerHTML = `
         <a href="room.html?id=${element.ID}&uid=${uid}" class="flex">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 mx-3 text-green-600">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
             <div class="flex flex-row w-full">
-                <p class="font-bold flex w-full">${element.Title}.</p>
+                <div class="flex w-full flex-col">
+                  <p class="font-bold">${element.Title}.</p>
+                  <p class="font-thin text-xs">ID   : ${element.ID}.</p>
+                  <p class="font-thin text-xs">Host : ${element.Host} ${span}.</p>
+                </div>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m12.75 15 3-3m0 0-3-3m3 3h-7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
@@ -71,7 +79,9 @@ async function createRom() {
 
   try {
     const uid = localStorage.getItem("_userid")
-    const payload = { judul: judul.value, uid: uid }; // Payload containing the title
+    const name = localStorage.getItem("_name");
+    const host =  localStorage.getItem("_email");
+    const payload = { judul: judul.value, uid: uid, host: host, host_name: name };
     
     const response = await fetch(`${URL}/api/create-room`, {
       method: "POST",
