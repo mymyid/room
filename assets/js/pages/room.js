@@ -70,13 +70,36 @@ document
     window.location.href = "home.html";
   });
 
-async function init() {
+try {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true,
   });
+  console.log("stream camera", stream);
   localStream = stream;
   localVideo.srcObject = localStream;
+} catch (error) {
+  if (error.name === "NotAllowedError") {
+    console.error("Permissions denied for camera and microphone.");
+    alert(
+      "Silahkan ijinkan aplikasi mengakses kamera dan microphone Anda untuk dapat menggunakan layanan ini."
+    );
+  } else if (error.name === "NotFoundError") {
+    console.error("No camera or microphone found.");
+    alert("Kamera atau mikrofon tidak dapat ditemukan di perangkat Anda");
+  } else {
+    console.error("Error accessing camera and microphone: ", error);
+    alert(`Tidak dapat mengakses kamera atau mikrofon Anda,   ${error}`);
+  }
+}
+
+async function init() {
+  if (!localStream) {
+    alert(
+      "Tidak dapat mengakses perangkat kamera atau mikrofone Anda, pastikan Anda mengijinkan apalikasi untuk mengakses kamera atau mikrofon Anda."
+    );
+    return;
+  }
   remoteStream = new MediaStream();
   remoteVideo.srcObject = remoteStream;
 

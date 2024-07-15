@@ -2,9 +2,8 @@ import { provider, auth } from "../firebase.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const emptySpace = document.getElementById("empty-info");
-const roomList = document.getElementById("room-list");
 const URL = "https://so.my.my.id";
-var isloading = false
+var isloading = false;
 document.getElementById("sign-out").addEventListener("click", function () {
   signOut(auth)
     .then(() => {
@@ -16,7 +15,9 @@ document.getElementById("sign-out").addEventListener("click", function () {
 });
 
 document.getElementById("simpan-button").addEventListener("click", createRom);
-document.getElementById("refresh-button").addEventListener("click", getInitialRoom)
+document
+  .getElementById("refresh-button")
+  .addEventListener("click", getInitialRoom);
 
 getInitialRoom();
 
@@ -29,18 +30,18 @@ async function generateList(rooms) {
   const dataRooms = Object.keys(rooms);
   if (dataRooms.length > 0) {
     emptySpace.classList.add("hidden");
-    roomList.classList.remove('hidden');
-    console.log(dataRooms.length)
-    roomList.innerHTML = ""
+    roomList.classList.remove("hidden");
+    console.log(dataRooms.length);
+    roomList.innerHTML = "";
     for (let index = 0; index < dataRooms.length; index++) {
       const element = rooms[dataRooms[index]];
-      console.log(element)
+      console.log(element);
       const li = document.createElement("li");
       li.className = "";
-      const uid = localStorage.getItem("_userid")
-      let span = ``
+      const uid = localStorage.getItem("_userid");
+      let span = ``;
       if (element.HostUid == uid) {
-        span = `<span class="md:ml-3 font-bold text-2xs bg-green-500 rounded-full px-2 text-white">me<span>`
+        span = `<span class="md:ml-3 font-bold text-2xs bg-green-500 rounded-full px-2 text-white">me<span>`;
       }
       li.innerHTML = `
         <div class="flex flex-row">
@@ -70,27 +71,31 @@ async function generateList(rooms) {
     }
   } else {
     emptySpace.classList.remove("hidden");
-    roomList.classList.add('hidden');
+    roomList.classList.add("hidden");
   }
-
 }
 async function createRom() {
-  if (isloading) return
-  isloading = true
+  if (isloading) return;
+  isloading = true;
   const judul = document.getElementById("judul");
 
   if (!judul.value) {
-    isloading = false
+    isloading = false;
     alert("Silahkan isi judul meeting terlebih dahulu");
     return;
   }
 
   try {
-    const uid = localStorage.getItem("_userid")
+    const uid = localStorage.getItem("_userid");
     const name = localStorage.getItem("_name");
-    const host =  localStorage.getItem("_email");
-    const payload = { judul: judul.value, uid: uid, host: host, host_name: name };
-    
+    const host = localStorage.getItem("_email");
+    const payload = {
+      judul: judul.value,
+      uid: uid,
+      host: host,
+      host_name: name,
+    };
+
     const response = await fetch(`${URL}/api/create-room`, {
       method: "POST",
       headers: {
@@ -100,10 +105,10 @@ async function createRom() {
     });
     const data = await response.json();
     judul.value = "";
-    isloading = false
-    getInitialRoom()
+    isloading = false;
+    getInitialRoom();
   } catch (error) {
-    isloading = false
+    isloading = false;
     alert(error);
   }
 }
@@ -134,18 +139,34 @@ async function deleteRoom(id) {
 
   const data = await response.json();
   console.log("Success send offer to server:", data);
-  getInitialRoom()
+  getInitialRoom();
 }
 
-window.deleteRoom = deleteRoom
+window.deleteRoom = deleteRoom;
 
 console.log("hello cah on home... 👋");
 
 const localVideo = document.getElementById("localVideo");
 const peerCamera = document.getElementById("peerCamera");
-// Get user media (camera)
-const stream = await navigator.mediaDevices.getUserMedia({
-  video: true,
-  audio: false,
-});
-localVideo.srcObject = stream;
+
+try {
+  // Request access to the camera and microphone
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true,
+  });
+  localVideo.srcObject = stream;
+} catch (error) {
+  if (error.name === "NotAllowedError") {
+    console.error("Permissions denied for camera and microphone.");
+    alert(
+      "Silahkan ijinkan aplikasi mengakses kamera dan microphone Anda untuk dapat menggunakan layanan ini."
+    );
+  } else if (error.name === "NotFoundError") {
+    console.error("No camera or microphone found.");
+    alert("Kamera atau mikrofon tidak dapat ditemukan di perangkat Anda");
+  } else {
+    console.error("Error accessing camera and microphone: ", error);
+    alert(`Tidak dapat mengakses kamera atau mikrofon Anda,   ${error}`);
+  }
+}
