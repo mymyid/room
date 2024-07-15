@@ -145,7 +145,7 @@ async function handleHost() {
       return;
     }
     console.log("Got candidate: ", event.candidate);
-    const response = await fetch(`${URL}/api/room/${roomId}/candidate/${uid}`, {
+    const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -171,7 +171,7 @@ async function handleHost() {
   await peerConnection.setLocalDescription(offer);
   console.log("Created offer:", offer);
 
-  const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
+  const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -232,7 +232,7 @@ async function handleClient() {
       return;
     }
     console.log("Got candidate: ", event.candidate);
-    const response = await fetch(`${URL}/api/room/${roomId}/candidate/${uid}`, {
+    const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -299,7 +299,7 @@ async function getOffer() {
 }
 
 async function sendAnswer(answer) {
-  const response = await fetch(`${URL}/api/room/${roomId}/join/${uid}`, {
+  const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ type: "answer", data: answer }),

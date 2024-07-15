@@ -2,6 +2,7 @@ import { provider, auth } from "../firebase.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const emptySpace = document.getElementById("empty-info");
+const roomList = document.getElementById("room-list");
 const URL = "https://so.my.my.id";
 var isloading = false;
 document.getElementById("sign-out").addEventListener("click", function () {
@@ -159,14 +160,12 @@ try {
 } catch (error) {
   if (error.name === "NotAllowedError") {
     console.error("Permissions denied for camera and microphone.");
-    alert(
-      "Silahkan ijinkan aplikasi mengakses kamera dan microphone Anda untuk dapat menggunakan layanan ini."
-    );
+    alert('Silahkan ijinkan aplikasi mengakses kamera dan microphone Anda untuk dapat menggunakan layanan ini.')
   } else if (error.name === "NotFoundError") {
     console.error("No camera or microphone found.");
-    alert("Kamera atau mikrofon tidak dapat ditemukan di perangkat Anda");
+    alert('Kamera atau mikrofon tidak dapat ditemukan di perangkat Anda')
   } else {
     console.error("Error accessing camera and microphone: ", error);
-    alert(`Tidak dapat mengakses kamera atau mikrofon Anda,   ${error}`);
+    alert(`Tidak dapat mengakses kamera atau mikrofon Anda,   ${error}`)
   }
 }
