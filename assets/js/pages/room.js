@@ -3,7 +3,7 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 
 console.log("hello cah on room... 👋");
 
-const URL = "https://so.my.my.id";
+const URL = "http://127.0.0.1:8080";
 const localVideo = document.getElementById("localVideo");
 const remoteVideo = document.getElementById("remoteVideo");
 let localStream = null;
@@ -376,10 +376,33 @@ function registerPeerConnectionListeners() {
     );
   });
 
-  peerConnection.addEventListener("connectionstatechange", () => {
+  peerConnection.addEventListener("connectionstatechange", async () => {
     console.log(`Connection state change: ${peerConnection.connectionState}`);
     document.getElementById("status-connection").innerHTML =
       peerConnection.signalingState;
+
+    if (peerConnection.connectionState == 'disconnected' || peerConnection.connectionState == 'connected') {
+      console.log("Got candidate: ", event.candidate);
+    const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: peerConnection.connectionState,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to get answer from server:", response.statusText);
+      if (response.status == 404) {
+        alert(`Room ${response.statusText}, please create a new room`);
+        window.location.href = "home.html";
+      }
+      return;
+    }
+
+    const data = await response.json();
+    console.log("Success send candidate to server:", data);
+    }
   });
 
   peerConnection.addEventListener("signalingstatechange", () => {
