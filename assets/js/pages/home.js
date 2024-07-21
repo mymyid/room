@@ -3,6 +3,7 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 
 const emptySpace = document.getElementById("empty-info");
 const roomList = document.getElementById("room-list");
+
 const URL = "https://so.my.my.id";
 var isloading = false;
 document.getElementById("sign-out").addEventListener("click", function () {

@@ -10,6 +10,7 @@ let localStream = null;
 let remoteStream = null;
 
 let peerConnection = null;
+let dataChannel = null;
 
 const configuration = {
   iceServers: [
@@ -32,6 +33,18 @@ document.getElementById("sign-out").addEventListener("click", function () {
       alert(error);
     });
 });
+
+document.getElementById('send-pesan').addEventListener('click', function() {
+  const message = document.getElementById('pesan')
+
+  if (!dataChannel) {
+    alert("Obrolan belum tersambung, anda belum dapat melakuakn obrolan")
+    return
+  }
+
+  dataChannel.send(message.value);
+  message.value = ""
+})
 
 document
   .getElementById("end-button")
@@ -121,7 +134,7 @@ async function init() {
   }
 
   if (room.ClientConnected == true || room.HostConnected == true) {
-    await updateConnectionStatus('disconnected')
+    await updateConnectionStatus("disconnected");
   }
 
   if (room.HostUid == uid) {
@@ -134,6 +147,7 @@ async function init() {
 async function handleHost() {
   // console.log("Create PeerConnection with configuration: ", configuration);
   peerConnection = new RTCPeerConnection(configuration);
+  dataChannel = peerConnection.createDataChannel('sendDataChannel');
 
   registerPeerConnectionListeners();
 
@@ -223,6 +237,7 @@ async function handleHost() {
 
 async function handleClient() {
   peerConnection = new RTCPeerConnection(configuration);
+  dataChannel = peerConnection.createDataChannel('sendDataChannel');
   registerPeerConnectionListeners();
   localStream.getTracks().forEach((track) => {
     peerConnection.addTrack(track, localStream);
@@ -380,21 +395,28 @@ function registerPeerConnectionListeners() {
 
   peerConnection.addEventListener("connectionstatechange", async () => {
     // console.log(`Connection state change: ${peerConnection.connectionState}`);
-    document.getElementById("status-connection").innerHTML =
-      `${peerConnection.signalingState} - ${peerConnection.connectionState}`
+    document.getElementById(
+      "status-connection"
+    ).innerHTML = `${peerConnection.signalingState} - ${peerConnection.connectionState}`;
 
     if (
       peerConnection.connectionState == "disconnected" ||
       peerConnection.connectionState == "connected"
     ) {
-      await updateConnectionStatus(peerConnection.connectionState)
+      await updateConnectionStatus(peerConnection.connectionState);
     }
 
-    if (peerConnection.signalingState == "stable" && peerConnection.connectionState == "connecting") {
-      if (remoteStream.srcObject == null || remoteStream.srcObject == undefined) {
+    if (
+      peerConnection.signalingState == "stable" &&
+      peerConnection.connectionState == "connecting"
+    ) {
+      if (
+        remoteStream.srcObject == null ||
+        remoteStream.srcObject == undefined
+      ) {
         // console.log('Reconnect')
-        
-        await updateConnectionStatus('disconnected')
+
+        await updateConnectionStatus("disconnected");
       }
     }
   });
@@ -407,6 +429,36 @@ function registerPeerConnectionListeners() {
     // console.log(
     //   `ICE connection state change: ${peerConnection.iceConnectionState}`
     // );
+  });
+
+  peerConnection.addEventListener("datachannel", (event) => {
+    const dataChannel = event.channel;
+    console.log("data channel >> ", event, dataChannel);
+  });
+
+  // Enable textarea and button when opened
+  dataChannel.addEventListener("open", (event) => {
+    console.log("open >> ", event);
+    document.getElementById('pesan').disabled = false
+    document.getElementById('pesan').focus()
+    // messageBox.disabled = false;
+    // messageBox.focus();
+    // sendButton.disabled = false;
+  });
+
+  // Disable input when closed
+  dataChannel.addEventListener("close", (event) => {
+    console.log("close >> ", event);
+    document.getElementById('pesan').disabled = true
+    // messageBox.disabled = false;
+    // sendButton.disabled = false;
+  });
+
+  // Append new messages to the box of incoming messages
+  dataChannel.addEventListener("message", (event) => {
+    console.log('message data channel >> ', event)
+    // const message = event.data;
+    // incomingMessages.textContent += message + "\n";
   });
 }
 
