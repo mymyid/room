@@ -379,29 +379,55 @@ function registerPeerConnectionListeners() {
   peerConnection.addEventListener("connectionstatechange", async () => {
     console.log(`Connection state change: ${peerConnection.connectionState}`);
     document.getElementById("status-connection").innerHTML =
-      peerConnection.signalingState;
+      `${peerConnection.signalingState} - ${peerConnection.connectionState}`
 
-    if (peerConnection.connectionState == 'disconnected' || peerConnection.connectionState == 'connected') {
-      console.log("Got candidate: ", event.candidate);
-    const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: peerConnection.connectionState,
-      }),
-    });
+    if (
+      peerConnection.connectionState == "disconnected" ||
+      peerConnection.connectionState == "connected"
+    ) {
+      const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: peerConnection.connectionState,
+        }),
+      });
 
-    if (!response.ok) {
-      console.error("Failed to get answer from server:", response.statusText);
-      if (response.status == 404) {
-        alert(`Room ${response.statusText}, please create a new room`);
-        window.location.href = "home.html";
+      if (!response.ok) {
+        console.error("Failed to get answer from server:", response.statusText);
+        if (response.status == 404) {
+          alert(`Room ${response.statusText}, please create a new room`);
+          window.location.href = "home.html";
+        }
+        return;
       }
-      return;
+
+      const data = await response.json();
+      console.log("Success send candidate to server:", data);
     }
 
-    const data = await response.json();
-    console.log("Success send candidate to server:", data);
+    if (peerConnection.signalingState == "stable" && peerConnection.connectionState == "connecting") {
+      if (remoteStream.srcObject == null || remoteStream.srcObject == undefined) {
+        console.log('Reconnect')
+        const response = await fetch(`${URL}/api/room/${roomId}/signal/${uid}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: 'disconnected',
+          }),
+        });
+  
+        if (!response.ok) {
+          console.error("Failed to get answer from server:", response.statusText);
+          if (response.status == 404) {
+            alert(`Room ${response.statusText}, please create a new room`);
+            window.location.href = "home.html";
+          }
+          return;
+        }
+
+        // location.reload()
+      }
     }
   });
 
