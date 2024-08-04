@@ -11,6 +11,7 @@ let remoteStream = null;
 
 let peerConnection = null;
 let dataChannel = null;
+let chanelState = false;
 
 const configuration = {
   iceServers: [
@@ -34,17 +35,32 @@ document.getElementById("sign-out").addEventListener("click", function () {
     });
 });
 
-document.getElementById('send-pesan').addEventListener('click', function() {
-  const message = document.getElementById('pesan')
+document.getElementById("send-pesan").addEventListener("click", function () {
+  const message = document.getElementById("pesan");
+  console.log(message.value, dataChannel, !dataChannel);
 
-  if (!dataChannel) {
-    alert("Obrolan belum tersambung, anda belum dapat melakuakn obrolan")
-    return
+  if (!dataChannel && chanelState == false) {
+    alert("Obrolan belum tersambung, anda belum dapat melakuakn obrolan");
+    return;
   }
 
+  var newChat = document.createElement("li");
+  newChat.classList.add("flex", "justify-end", "rounded", "px-2", "py-1");
+
+  // Create a new p element
+  var chatText = document.createElement("p");
+  chatText.classList.add("bg-green-100", "rounded-lg", "px-2", "py-1");
+  chatText.textContent = message.value;
+
+  // Append the p element to the li element
+  newChat.appendChild(chatText);
+
+  // Append the new li element to the ul with id "listChat"
+  document.getElementById("listChat").appendChild(newChat);
+
   dataChannel.send(message.value);
-  message.value = ""
-})
+  message.value = "";
+});
 
 document
   .getElementById("end-button")
@@ -147,7 +163,7 @@ async function init() {
 async function handleHost() {
   // console.log("Create PeerConnection with configuration: ", configuration);
   peerConnection = new RTCPeerConnection(configuration);
-  dataChannel = peerConnection.createDataChannel('sendDataChannel');
+  dataChannel = peerConnection.createDataChannel("sendDataChannel");
 
   registerPeerConnectionListeners();
 
@@ -237,7 +253,7 @@ async function handleHost() {
 
 async function handleClient() {
   peerConnection = new RTCPeerConnection(configuration);
-  dataChannel = peerConnection.createDataChannel('sendDataChannel');
+  dataChannel = peerConnection.createDataChannel("sendDataChannel");
   registerPeerConnectionListeners();
   localStream.getTracks().forEach((track) => {
     peerConnection.addTrack(track, localStream);
@@ -432,15 +448,16 @@ function registerPeerConnectionListeners() {
   });
 
   peerConnection.addEventListener("datachannel", (event) => {
-    const dataChannel = event.channel;
+    dataChannel = event.channel;
     console.log("data channel >> ", event, dataChannel);
   });
 
   // Enable textarea and button when opened
   dataChannel.addEventListener("open", (event) => {
+    chanelState = true;
     console.log("open >> ", event);
-    document.getElementById('pesan').disabled = false
-    document.getElementById('pesan').focus()
+    document.getElementById("pesan").disabled = false;
+    document.getElementById("pesan").focus();
     // messageBox.disabled = false;
     // messageBox.focus();
     // sendButton.disabled = false;
@@ -448,17 +465,30 @@ function registerPeerConnectionListeners() {
 
   // Disable input when closed
   dataChannel.addEventListener("close", (event) => {
+    chanelState = false;
     console.log("close >> ", event);
-    document.getElementById('pesan').disabled = true
+    document.getElementById("pesan").disabled = true;
     // messageBox.disabled = false;
     // sendButton.disabled = false;
   });
 
   // Append new messages to the box of incoming messages
   dataChannel.addEventListener("message", (event) => {
-    console.log('message data channel >> ', event)
-    // const message = event.data;
-    // incomingMessages.textContent += message + "\n";
+    const message = event.data;
+
+    var newChat = document.createElement("li");
+    newChat.classList.add("flex", "justify-start", "rounded", "px-2", "py-1");
+
+    // Create a new p element
+    var chatText = document.createElement("p");
+    chatText.classList.add("bg-blue-100", "rounded-lg", "px-2", "py-1");
+    chatText.textContent = message;
+
+    // Append the p element to the li element
+    newChat.appendChild(chatText);
+
+    // Append the new li element to the ul with id "listChat"
+    document.getElementById("listChat").appendChild(newChat);
   });
 }
 
